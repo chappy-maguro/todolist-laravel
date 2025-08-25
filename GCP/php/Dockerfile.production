@@ -1,0 +1,75 @@
+# Stage 1: Build frontend assets
+FROM node:20 as frontend
+WORKDIR /app
+COPY src/package.json src/package-lock.json ./
+RUN npm install
+COPY src/ .
+RUN rm -f public/hot
+RUN npm run build
+
+# Stage 2: Setup PHP environment
+FROM php:8.2-fpm
+
+# Set environment variables
+ENV TZ Asia/Tokyo
+ENV COMPOSER_ALLOW_SUPERUSER 1
+ENV COMPOSER_HOME /composer
+ENV PATH $PATH:/composer/vendor/bin
+
+# Install system dependencies and PHP extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    curl \
+    git \
+    unzip \
+    libfreetype6-dev \
+    libicu-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libpq-dev \
+    libzip-dev \
+    libmagickwand-dev \
+    mariadb-client \
+    busybox-static \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-configure gd --enable-gd --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd \
+    && docker-php-ext-install zip pdo_mysql intl sockets opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && echo "${TZ}" > /etc/timezone \
+    && dpkg-reconfigure -f noninteractive tzdata
+
+# Install Composer
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+
+# Copy application code
+COPY src /var/www/html/
+WORKDIR /var/www/html/
+
+# Copy built assets from the frontend stage
+COPY --from=frontend /app/public/build /var/www/html/public/build
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Set permissions
+RUN chmod -R ugo+w storage/ bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html
+
+# Copy environment file
+COPY GCP/php/.env.yuyama-production ./.env
+
+# Copy scripts and set permissions
+COPY GCP/php/run_container_processes_front /usr/local/bin/run_container_processes
+COPY GCP/php/crontab /var/spool/cron/crontabs/root
+COPY GCP/php/run_container_processes_batch /usr/local/bin/run_container_processes_batch
+COPY GCP/php/run_container_processes_worker /usr/local/bin/run_container_processes_worker
+RUN chmod +x /usr/local/bin/run_container_processes*
+
+# Ensure all files are owned by www-data
+RUN chown -R www-data:www-data /var/www/html
+
+# Set entrypoint
+CMD ["/usr/local/bin/run_container_processes"]

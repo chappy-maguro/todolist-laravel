@@ -1,0 +1,13 @@
+#!/bin/sh
+set -e
+
+# Clear all Laravel caches to ensure freshness
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+php artisan storage:link
+
+# PHP FPMの実行
+php-fpm

@@ -1,0 +1,54 @@
+steps:
+# Build the PHP-FPM image (which also builds assets)
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-php'
+  args:
+    - 'build'
+    - '-t'
+    - 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_PHP_IMAGE_NAME}:$BUILD_ID'
+    - '-f'
+    - 'GCP/php/Dockerfile.production'
+    - '.'
+
+# Build the Nginx image, using the PHP image as a source for assets
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-nginx'
+  args:
+    - 'build'
+    - '--build-arg'
+    - 'PHP_IMAGE=asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_PHP_IMAGE_NAME}:$BUILD_ID'
+    - '-t'
+    - 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_NGINX_IMAGE_NAME}:$BUILD_ID'
+    - '-f'
+    - 'GCP/nginx/Dockerfile'
+    - '.'
+  waitFor:
+    - 'build-php'
+
+# Push the PHP-FPM image
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-php'
+  args:
+    - 'push'
+    - 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_PHP_IMAGE_NAME}:$BUILD_ID'
+  waitFor:
+    - 'build-php'
+
+# Push the Nginx image
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-nginx'
+  args:
+    - 'push'
+    - 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_NGINX_IMAGE_NAME}:$BUILD_ID'
+  waitFor:
+    - 'build-nginx'
+
+images:
+- 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_NGINX_IMAGE_NAME}:$BUILD_ID'
+- 'asia-northeast2-docker.pkg.dev/${_PROJECT_ID}/${_REPOSITORY}/${_PHP_IMAGE_NAME}:$BUILD_ID'
+
+substitutions:
+  _PROJECT_ID: 'unique-dialect-468708-r4' # ご自身のGCPプロジェクトIDに変更してください
+  _REPOSITORY: 'cloud-run-source-deploy' # ご自身のArtifact Registryリポジトリ名に変更してください
+  _NGINX_IMAGE_NAME: 'todolist-nginx'
+  _PHP_IMAGE_NAME: 'todolist-php'

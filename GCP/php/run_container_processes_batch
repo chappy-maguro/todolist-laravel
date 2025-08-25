@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+cd /var/www/html
+
+php artisan storage:link
+
+php-fpm &
+busybox crond -f -L /dev/stdout

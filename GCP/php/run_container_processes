@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# スケジューラの実行
+## 本番環境ではcrondでスケジューラを起動する必要がある
+## https://readouble.com/laravel/10.x/ja/scheduling.html#running-the-scheduler
+php artisan schedule:work &
+
+# キューワーカーの実行
+## 本番環境ではsupervisordでキューワーカープロセスを起動する必要がある
+## https://readouble.com/laravel/10.x/ja/queues.html#supervisor-configuration
+php artisan queue:work &
+
+# PHP FPMの実行
+php-fpm

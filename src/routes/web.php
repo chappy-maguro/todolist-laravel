@@ -4,6 +4,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TodoController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,3 +31,13 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// DB Connection Test Route
+Route::get('/db-check', function () {
+    try {
+        DB::connection()->getPdo();
+        return 'Successfully connected to the database!';
+    } catch (\Exception $e) {
+        return 'Failed to connect to the database. Error: ' . $e->getMessage();
+    }
+});

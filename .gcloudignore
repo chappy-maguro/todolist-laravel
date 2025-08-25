@@ -1,0 +1,21 @@
+# gcloudignore
+
+# Default gcloudignore format is .gitignore format.
+# See https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore for more details.
+
+# Omit the storage symlink to prevent gcloud CLI crashes on Windows.
+/src/public/storage
+
+# Omit Laravel dependencies, environment files, and other non-essential files.
+/src/vendor/
+/src/node_modules/
+/src/.env
+
+# Omit Docker-related files.
+/docker/
+docker-compose.yml
+
+# Omit IDE settings.
+.idea
+.vscode
+/src/public/hot
