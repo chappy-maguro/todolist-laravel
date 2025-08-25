@@ -52,3 +52,6 @@ substitutions:
   _REPOSITORY: 'cloud-run-source-deploy' # ご自身のArtifact Registryリポジトリ名に変更してください
   _NGINX_IMAGE_NAME: 'todolist-nginx'
   _PHP_IMAGE_NAME: 'todolist-php'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
